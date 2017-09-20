@@ -1,6 +1,7 @@
 from subprocess import Popen, PIPE, STDOUT
 from PIL import Image, ImageDraw, ImageFont
-import StringIO
+# import StringIO
+import io
 import re
 import os
 from decimal import Decimal
@@ -23,7 +24,8 @@ class Video:
     def getVideoDuration(self):
         p = Popen(["ffmpeg","-i",self.filename],stdout=PIPE, stderr=STDOUT)
         pout = p.communicate()
-        matches = re.search(r"Duration:\s{1}(?P<hours>\d+?):(?P<minutes>\d+?):(?P<seconds>\d+\.\d+?),", pout[0], re.DOTALL).groupdict()
+        print(pout[0].decode())
+        matches = re.search(r"Duration:\s{1}(?P<hours>\d+?):(?P<minutes>\d+?):(?P<seconds>\d+\.\d+?),", pout[0].decode(), re.DOTALL).groupdict()
         hours = Decimal(matches['hours'])
         minutes = Decimal(matches['minutes'])
         seconds = Decimal(matches['seconds'])
@@ -35,7 +37,11 @@ class Video:
         p = Popen(["ffmpeg","-ss",timestring,"-i",self.filename,"-f","image2","-frames:v","1","-c:v","png","-loglevel","8","-"],stdout=PIPE)
         pout = p.communicate()
         try:
-            img = Image.open(StringIO.StringIO(pout[0]))
+            #img = Image.open(io.StringIO(pout[0]))
+            picture_stream = io.BytesIO(pout[0])
+
+            img = Image.open(picture_stream)
+            test = img
         except IOError:
             return None
         return img
@@ -65,7 +71,7 @@ class Video:
         hours = int(seconds // 3600)
         minutes = int((seconds % 3600) // 60)
         seconds = int(seconds % 60)
-        timestring = `hours`+":"+`minutes`+":"+`seconds`
+        timestring = repr(hours)+":"+repr(minutes)+":"+repr(seconds)
         return timestring
 
 class Sheet:
@@ -134,7 +140,7 @@ class Sheet:
         d = ImageDraw.Draw(header)
         d.text((10,10), "File Name: "+os.path.basename(self.video.filename), font=self.font,fill=self.textColour)
         d.text((10,30), "File Size: "+("{:10.6f}".format(self.video.filesize))+" MB", font=self.font,fill=self.textColour)
-        d.text((10,50), "Resolution: "+`width`+"x"+`height`, font=self.font,fill=self.textColour)
+        d.text((10,50), "Resolution: "+repr(width)+"x"+repr(height), font=self.font,fill=self.textColour)
         d.text((10,70), "Duration: "+timestring, font=self.font,fill=self.textColour)
         self.header = header
         return header
