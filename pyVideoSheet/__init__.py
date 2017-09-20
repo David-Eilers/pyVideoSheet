@@ -1,6 +1,5 @@
 from subprocess import Popen, PIPE, STDOUT
 from PIL import Image, ImageDraw, ImageFont
-# import StringIO
 import io
 import re
 import os
@@ -24,7 +23,6 @@ class Video:
     def getVideoDuration(self):
         p = Popen(["ffmpeg","-i",self.filename],stdout=PIPE, stderr=STDOUT)
         pout = p.communicate()
-        print(pout[0].decode())
         matches = re.search(r"Duration:\s{1}(?P<hours>\d+?):(?P<minutes>\d+?):(?P<seconds>\d+\.\d+?),", pout[0].decode(), re.DOTALL).groupdict()
         hours = Decimal(matches['hours'])
         minutes = Decimal(matches['minutes'])
@@ -37,17 +35,14 @@ class Video:
         p = Popen(["ffmpeg","-ss",timestring,"-i",self.filename,"-f","image2","-frames:v","1","-c:v","png","-loglevel","8","-"],stdout=PIPE)
         pout = p.communicate()
         try:
-            #img = Image.open(io.StringIO(pout[0]))
             picture_stream = io.BytesIO(pout[0])
-
             img = Image.open(picture_stream)
-            test = img
         except IOError:
             return None
         return img
 
     def makeThumbnails(self,interval):
-        totalThumbs = self.duration//interval
+        totalThumbs = int(self.duration//interval)
         thumbsList = []
         seektime = 0
         for n in range(0,totalThumbs):
